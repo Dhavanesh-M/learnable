@@ -14,11 +14,6 @@ const LANGS = [
   { code: "pa", label: "Punjabi", native: "ਪੰਜਾਬੀ" },
 ];
 
-const LANG_NAME: Record<string, string> = {
-  en: "English", hi: "Hindi", ta: "Tamil", te: "Telugu", bn: "Bengali",
-  mr: "Marathi", kn: "Kannada", ml: "Malayalam", gu: "Gujarati", pa: "Punjabi",
-};
-
 const UI: Record<string, Record<string, string>> = {
   en: { tagline: "Every mind learns differently", placeholder: "Paste any text to learn...", read: "🔊 Read Along", pause: "⏸ Pause", resume: "▶ Resume", stop: "⏹ Stop", explain: "🧑‍🏫 Explain", sign: "🤟 Sign Language", keyWords: "🔑 Key words:", interpreter: "Sign Language Interpreter", signing: "Signing:", save: "⬇ Save Transcript", clickRead: "Click Read Along to hear and see...", font: "Font", speed: "Speed", contrast: "High Contrast", dyslexia: "Dyslexia Mode", tutorLabel: "AI Tutor", footer: "Made by PixelPulse · Inclusive learning for everyone" },
   hi: { tagline: "हर मन अलग तरह से सीखता है", placeholder: "सीखने के लिए कोई भी टेक्स्ट यहाँ डालें...", read: "🔊 साथ पढ़ें", pause: "⏸ रोकें", resume: "▶ जारी रखें", stop: "⏹ बंद करें", explain: "🧑‍🏫 समझाएँ", sign: "🤟 सांकेतिक भाषा", keyWords: "🔑 मुख्य शब्द:", interpreter: "सांकेतिक भाषा दुभाषिया", signing: "इशारा:", save: "⬇ ट्रांसक्रिप्ट सहेजें", clickRead: "सुनने और देखने के लिए 'साथ पढ़ें' दबाएँ...", font: "फ़ॉन्ट", speed: "गति", contrast: "उच्च कंट्रास्ट", dyslexia: "डिस्लेक्सिया मोड", tutorLabel: "एआई शिक्षक", footer: "PixelPulse द्वारा · सबके लिए समावेशी शिक्षा" },
@@ -104,13 +99,15 @@ export default function Home() {
     if (!text.trim()) return;
     setTutor("");
     setTutorLoading(true);
-    const prompt = `Explain the following text in very simple ${LANG_NAME[lang]} that a school student can understand. Reply ONLY in ${LANG_NAME[lang]}. Keep it under 4 short sentences.\n\nText: ${text}`;
     try {
-      const res = await (window as any).puter?.ai?.chat(prompt);
-      const reply = typeof res === "string" ? res : res?.message?.content || res?.toString();
-      setTutor(reply || "No response from AI.");
+      // Google Translate free API — no key, no signup, reliable
+      const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${lang}&dt=t&q=${encodeURIComponent(text.slice(0, 500))}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      const translated = data[0].map((item: any) => item[0]).join("");
+      setTutor(translated);
     } catch (e) {
-      setTutor(`[Offline fallback] ${text.slice(0, 160)}...`);
+      setTutor(`[Translation unavailable] ${text.slice(0, 160)}...`);
     } finally {
       setTutorLoading(false);
     }
