@@ -53,6 +53,18 @@ export default function Home() {
 
   const T = UI[lang] || UI.en;
 
+  const translate = async (src: string) => {
+    if (lang === "en") return src;
+    try {
+      const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${lang}&dt=t&q=${encodeURIComponent(src.slice(0, 500))}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      return data[0].map((item: any) => item[0]).join("");
+    } catch (e) {
+      return src;
+    }
+  };
+
   const extractKeywords = (t: string) => {
     const cleaned = t.toLowerCase().replace(/[^a-z\s]/g, "").split(/\s+/);
     const freq: Record<string, number> = {};
@@ -62,22 +74,34 @@ export default function Home() {
     return Object.entries(freq).sort((a, b) => b[1] - a[1]).slice(0, 5).map(x => x[0]);
   };
 
-  const speak = () => {
+  const speak = async () => {
     if (!text.trim()) return;
     window.speechSynthesis.cancel();
-    const w = text.split(/\s+/).filter(Boolean);
+    setSpeaking(false);
+    setCurrentIdx(-1);
+
+    // Translate to target language first
+    const speakText = await translate(text);
+    const w = speakText.split(/\s+/).filter(Boolean);
     setWords(w);
     setKeywords(extractKeywords(text));
-    const u = new SpeechSynthesisUtterance(text);
+
+    const u = new SpeechSynthesisUtterance(speakText);
     u.rate = rate;
     const voices = window.speechSynthesis.getVoices();
-    const pick = voices.find(v => v.lang.toLowerCase().startsWith(lang));
+    let pick = voices.find(v => v.lang.toLowerCase().startsWith(lang));
+    if (!pick && lang === "hi") pick = voices.find(v => v.lang.toLowerCase().includes("hi"));
+    if (!pick && lang === "ta") pick = voices.find(v => v.lang.toLowerCase().includes("ta"));
+    if (!pick && lang === "te") pick = voices.find(v => v.lang.toLowerCase().includes("te"));
+    if (!pick && lang === "bn") pick = voices.find(v => v.lang.toLowerCase().includes("bn"));
+    if (!pick) pick = voices.find(v => v.lang.toLowerCase().startsWith("en"));
     if (pick) u.voice = pick;
+
     u.onstart = () => { setSpeaking(true); setPaused(false); };
     u.onend = () => { setSpeaking(false); setCurrentIdx(-1); };
     u.onboundary = (e) => {
       if (e.name === "word") {
-        const idx = text.slice(0, e.charIndex).trim().split(/\s+/).length - 1;
+        const idx = speakText.slice(0, e.charIndex).trim().split(/\s+/).length - 1;
         setCurrentIdx(idx);
         if (idx >= 0 && w[idx]) setTranscript(prev => [...prev.slice(-40), w[idx]]);
       }
@@ -99,18 +123,9 @@ export default function Home() {
     if (!text.trim()) return;
     setTutor("");
     setTutorLoading(true);
-    try {
-      // Google Translate free API — no key, no signup, reliable
-      const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${lang}&dt=t&q=${encodeURIComponent(text.slice(0, 500))}`;
-      const res = await fetch(url);
-      const data = await res.json();
-      const translated = data[0].map((item: any) => item[0]).join("");
-      setTutor(translated);
-    } catch (e) {
-      setTutor(`[Translation unavailable] ${text.slice(0, 160)}...`);
-    } finally {
-      setTutorLoading(false);
-    }
+    const translated = await translate(text);
+    setTutor(translated);
+    setTutorLoading(false);
   };
 
   const downloadTranscript = () => {
