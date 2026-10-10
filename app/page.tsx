@@ -53,14 +53,18 @@ export default function Home() {
 
   const T = UI[lang] || UI.en;
 
-  const translate = async (src: string) => {
+  // Translation using MyMemory (free, CORS-friendly, no API key)
+  const translate = async (src: string): Promise<string> => {
     if (lang === "en") return src;
     try {
-      const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${lang}&dt=t&q=${encodeURIComponent(src.slice(0, 500))}`;
+      const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(src.slice(0, 500))}&langpair=en|${lang}`;
       const res = await fetch(url);
       const data = await res.json();
-      return data[0].map((item: any) => item[0]).join("");
+      const out = data?.responseData?.translatedText;
+      if (!out || typeof out !== "string") return src;
+      return out;
     } catch (e) {
+      console.error("Translation failed:", e);
       return src;
     }
   };
@@ -80,7 +84,6 @@ export default function Home() {
     setSpeaking(false);
     setCurrentIdx(-1);
 
-    // Translate to target language first
     const speakText = await translate(text);
     const w = speakText.split(/\s+/).filter(Boolean);
     setWords(w);
