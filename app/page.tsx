@@ -1,271 +1,614 @@
 "use client";
-import { useState, useEffect } from "react";
 
-const LANGS = [
-  { code: "en", label: "English", native: "English" },
-  { code: "hi", label: "Hindi", native: "हिन्दी" },
-  { code: "ta", label: "Tamil", native: "தமிழ்" },
-  { code: "te", label: "Telugu", native: "తెలుగు" },
-  { code: "bn", label: "Bengali", native: "বাংলা" },
-  { code: "mr", label: "Marathi", native: "मराठी" },
-  { code: "kn", label: "Kannada", native: "ಕನ್ನಡ" },
-  { code: "ml", label: "Malayalam", native: "മലയാളം" },
-  { code: "gu", label: "Gujarati", native: "ગુજરાતી" },
-  { code: "pa", label: "Punjabi", native: "ਪੰਜਾਬੀ" },
-];
+import { useEffect, useRef, useState } from "react";
 
-const UI: Record<string, Record<string, string>> = {
-  en: { tagline: "Every mind learns differently", placeholder: "Paste any text to learn...", read: "🔊 Read Along", pause: "⏸ Pause", resume: "▶ Resume", stop: "⏹ Stop", explain: "🧑‍🏫 Explain", sign: "🤟 Sign Language", keyWords: "🔑 Key words:", interpreter: "Sign Language Interpreter", signing: "Signing:", save: "⬇ Save Transcript", clickRead: "Click Read Along to hear and see...", font: "Font", speed: "Speed", contrast: "High Contrast", dyslexia: "Dyslexia Mode", tutorLabel: "AI Tutor", footer: "Made by PixelPulse · Inclusive learning for everyone" },
-  hi: { tagline: "हर मन अलग तरह से सीखता है", placeholder: "सीखने के लिए कोई भी टेक्स्ट यहाँ डालें...", read: "🔊 साथ पढ़ें", pause: "⏸ रोकें", resume: "▶ जारी रखें", stop: "⏹ बंद करें", explain: "🧑‍🏫 समझाएँ", sign: "🤟 सांकेतिक भाषा", keyWords: "🔑 मुख्य शब्द:", interpreter: "सांकेतिक भाषा दुभाषिया", signing: "इशारा:", save: "⬇ ट्रांसक्रिप्ट सहेजें", clickRead: "सुनने और देखने के लिए 'साथ पढ़ें' दबाएँ...", font: "फ़ॉन्ट", speed: "गति", contrast: "उच्च कंट्रास्ट", dyslexia: "डिस्लेक्सिया मोड", tutorLabel: "एआई शिक्षक", footer: "PixelPulse द्वारा · सबके लिए समावेशी शिक्षा" },
-  ta: { tagline: "ஒவ்வொரு மனமும் வித்தியாசமாக கற்கிறது", placeholder: "கற்க எந்த உரையையும் இங்கே ஒட்டவும்...", read: "🔊 சேர்ந்து படி", pause: "⏸ இடைநிறுத்து", resume: "▶ தொடர்", stop: "⏹ நிறுத்து", explain: "🧑‍🏫 விளக்கு", sign: "🤟 சைகை மொழி", keyWords: "🔑 முக்கிய சொற்கள்:", interpreter: "சைகை மொழி மொழிபெயர்ப்பாளர்", signing: "சைகை:", save: "⬇ உரையை சேமி", clickRead: "கேட்கவும் பார்க்கவும் 'சேர்ந்து படி' அழுத்தவும்...", font: "எழுத்துரு", speed: "வேகம்", contrast: "அதிக மாறுபாடு", dyslexia: "டிஸ்லெக்சியா பயன்முறை", tutorLabel: "AI ஆசிரியர்", footer: "PixelPulse · அனைவருக்கும் உள்ளடக்கிய கல்வி" },
-  te: { tagline: "ప్రతి మనసు వేరుగా నేర్చుకుంటుంది", placeholder: "నేర్చుకోవడానికి ఏదైనా వచనాన్ని ఇక్కడ పేస్ట్ చేయండి...", read: "🔊 కలిసి చదువు", pause: "⏸ విరామం", resume: "▶ కొనసాగించు", stop: "⏹ ఆపు", explain: "🧑‍🏫 వివరించు", sign: "🤟 సంజ్ఞ భాష", keyWords: "🔑 ముఖ్య పదాలు:", interpreter: "సంజ్ఞ భాషా దుబాసీ", signing: "సంజ్ఞ:", save: "⬇ ట్రాన్స్క్రిప్ట్ సేవ్", clickRead: "వినడానికి, చూడటానికి 'కలిసి చదువు' నొక్కండి...", font: "ఫాంట్", speed: "వేగం", contrast: "అధిక కాంట్రాస్ట్", dyslexia: "డిస్లెక్సియా మోడ్", tutorLabel: "AI ట్యూటర్", footer: "PixelPulse · అందరికీ సమగ్ర విద్య" },
-  bn: { tagline: "প্রতিটি মন আলাদাভাবে শেখে", placeholder: "শিখতে যেকোনো টেক্সট এখানে পেস্ট করুন...", read: "🔊 সাথে পড়ুন", pause: "⏸ বিরতি", resume: "▶ চালু", stop: "⏹ থামুন", explain: "🧑‍🏫 ব্যাখ্যা", sign: "🤟 সাংকেতিক ভাষা", keyWords: "🔑 মূল শব্দ:", interpreter: "সাংকেতিক ভাষা দোভাষী", signing: "সংকেত:", save: "⬇ ট্রান্সক্রিপ্ট সংরক্ষণ", clickRead: "শুনতে ও দেখতে 'সাথে পড়ুন' চাপুন...", font: "ফন্ট", speed: "গতি", contrast: "উচ্চ কনট্রাস্ট", dyslexia: "ডিস্লেক্সিয়া মোড", tutorLabel: "AI শিক্ষক", footer: "PixelPulse · সবার জন্য অন্তর্ভুক্তিমূলক শিক্ষা" },
-  mr: { tagline: "प्रत्येक मन वेगळ्या पद्धतीने शिकतो", placeholder: "शिकण्यासाठी कोणताही मजकूर येथे पेस्ट करा...", read: "🔊 सोबत वाचा", pause: "⏸ थांबवा", resume: "▶ सुरू", stop: "⏹ बंद", explain: "🧑‍🏫 समजावून सांगा", sign: "🤟 सांकेतिक भाषा", keyWords: "🔑 मुख्य शब्द:", interpreter: "सांकेतिक भाषा दुभाषी", signing: "संकेत:", save: "⬇ ट्रान्स्क्रिप्ट जतन करा", clickRead: "ऐकण्यासाठी व पाहण्यासाठी 'सोबत वाचा' दाबा...", font: "फॉन्ट", speed: "वेग", contrast: "उच्च कॉन्ट्रास्ट", dyslexia: "डिस्लेक्सिया मोड", tutorLabel: "AI शिक्षक", footer: "PixelPulse · सर्वांसाठी समावेशक शिक्षण" },
-  kn: { tagline: "ಪ್ರತಿ ಮನಸ್ಸು ವಿಭಿನ್ನವಾಗಿ ಕಲಿಯುತ್ತದೆ", placeholder: "ಕಲಿಯಲು ಯಾವುದೇ ಪಠ್ಯವನ್ನು ಇಲ್ಲಿ ಅಂಟಿಸಿ...", read: "🔊 ಜೊತೆಗೆ ಓದಿ", pause: "⏸ ವಿರಾಮ", resume: "▶ ಮುಂದುವರಿಸಿ", stop: "⏹ ನಿಲ್ಲಿಸಿ", explain: "🧑‍🏫 ವಿವರಿಸಿ", sign: "🤟 ಸನ್ನೆ ಭಾಷೆ", keyWords: "🔑 ಪ್ರಮುಖ ಪದಗಳು:", interpreter: "ಸನ್ನೆ ಭಾಷಾ ದುಭಾಷಿ", signing: "ಸನ್ನೆ:", save: "⬇ ಟ್ರಾನ್ಸ್ಕ್ರಿಪ್ಟ್ ಉಳಿಸಿ", clickRead: "ಕೇಳಲು ಮತ್ತು ನೋಡಲು 'ಜೊತೆಗೆ ಓದಿ' ಒತ್ತಿರಿ...", font: "ಫಾಂಟ್", speed: "ವೇಗ", contrast: "ಹೆಚ್ಚಿನ ಕಾಂಟ್ರಾಸ್ಟ್", dyslexia: "ಡಿಸ್ಲೆಕ್ಸಿಯಾ ಮೋಡ್", tutorLabel: "AI ಶಿಕ್ಷಕ", footer: "PixelPulse · ಎಲ್ಲರಿಗೂ ಒಳಗೊಳ್ಳುವ ಶಿಕ್ಷಣ" },
-  ml: { tagline: "ഓരോ മനസ്സും വ്യത്യസ്തമായി പഠിക്കുന്നു", placeholder: "പഠിക്കാൻ ഏതെങ്കിലും ടെക്സ്റ്റ് ഇവിടെ പേസ്റ്റ് ചെയ്യുക...", read: "🔊 ഒപ്പം വായിക്കുക", pause: "⏸ താൽക്കാലികമായി നിർത്തുക", resume: "▶ തുടരുക", stop: "⏹ നിർത്തുക", explain: "🧑‍🏫 വിശദീകരിക്കുക", sign: "🤟 ആംഗ്യഭാഷ", keyWords: "🔑 പ്രധാന വാക്കുകൾ:", interpreter: "ആംഗ്യഭാഷാ വ്യാഖ്യാതാവ്", signing: "ആംഗ്യം:", save: "⬇ ട്രാൻസ്ക്രിപ്റ്റ് സേവ് ചെയ്യുക", clickRead: "കേൾക്കാനും കാണാനും 'ഒപ്പം വായിക്കുക' അമർത്തുക...", font: "ഫോണ്ട്", speed: "വേഗത", contrast: "ഉയർന്ന കോൺട്രാസ്റ്റ്", dyslexia: "ഡിസ്ലെക്സിയ മോഡ്", tutorLabel: "AI അധ്യാപകൻ", footer: "PixelPulse · എല്ലാവർക്കും ഉൾക്കൊള്ളുന്ന വിദ്യാഭ്യാസം" },
-  gu: { tagline: "દરેક મન અલગ રીતે શીખે છે", placeholder: "શીખવા માટે કોઈપણ ટેક્સ્ટ અહીં પેસ્ટ કરો...", read: "🔊 સાથે વાંચો", pause: "⏸ થોભો", resume: "▶ ચાલુ", stop: "⏹ બંધ", explain: "🧑‍🏫 સમજાવો", sign: "🤟 સાંકેતિક ભાષા", keyWords: "🔑 મુખ્ય શબ્દો:", interpreter: "સાંકેતિક ભાષા દુભાષિયો", signing: "સંકેત:", save: "⬇ ટ્રાન્સક્રિપ્ટ સાચવો", clickRead: "સાંભળવા અને જોવા 'સાથે વાંચો' દબાવો...", font: "ફોન્ટ", speed: "ઝડપ", contrast: "ઉચ્ચ કોન્ટ્રાસ્ટ", dyslexia: "ડિસ્લેક્સિયા મોડ", tutorLabel: "AI શિક્ષક", footer: "PixelPulse · બધા માટે સમાવેશી શિક્ષણ" },
-  pa: { tagline: "ਹਰ ਮਨ ਵੱਖਰੇ ਤਰੀਕੇ ਨਾਲ ਸਿੱਖਦਾ ਹੈ", placeholder: "ਸਿੱਖਣ ਲਈ ਕੋਈ ਵੀ ਟੈਕਸਟ ਇੱਥੇ ਪੇਸਟ ਕਰੋ...", read: "🔊 ਨਾਲ ਪੜ੍ਹੋ", pause: "⏸ ਰੋਕੋ", resume: "▶ ਜਾਰੀ ਰੱਖੋ", stop: "⏹ ਬੰਦ ਕਰੋ", explain: "🧑‍🏫 ਸਮਝਾਓ", sign: "🤟 ਸੰਕੇਤ ਭਾਸ਼ਾ", keyWords: "🔑 ਮੁੱਖ ਸ਼ਬਦ:", interpreter: "ਸੰਕੇਤ ਭਾਸ਼ਾ ਦੁਭਾਸ਼ੀਆ", signing: "ਸੰਕੇਤ:", save: "⬇ ਟ੍ਰਾਂਸਕ੍ਰਿਪਟ ਸੇਵ ਕਰੋ", clickRead: "ਸੁਣਨ ਅਤੇ ਵੇਖਣ ਲਈ 'ਨਾਲ ਪੜ੍ਹੋ' ਦਬਾਓ...", font: "ਫੌਂਟ", speed: "ਗਤੀ", contrast: "ਉੱਚ ਕੰਟ੍ਰਾਸਟ", dyslexia: "ਡਿਸਲੈਕਸੀਆ ਮੋਡ", tutorLabel: "AI ਅਧਿਆਪਕ", footer: "PixelPulse · ਸਾਰਿਆਂ ਲਈ ਸੰਮਿਲਿਤ ਸਿੱਖਿਆ" },
+type Page = "home" | "learn" | "support" | "tests" | "helper" | "voice" | "teacher" | "educator";
+type Activity = "reading" | "visuals" | "math";
+type RecognitionResult = { results: ArrayLike<ArrayLike<{ transcript: string }>> };
+type RecognitionInstance = {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  onresult: ((event: RecognitionResult) => void) | null;
+  onerror: (() => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+};
+type RecognitionWindow = Window & {
+  SpeechRecognition?: new () => RecognitionInstance;
+  webkitSpeechRecognition?: new () => RecognitionInstance;
 };
 
-const STOPWORDS = ["the","is","are","a","an","of","to","and","in","on","for","with","by","as","at","it","this","that","be","or","from","which","was","were","has","have","had"];
+const LANGUAGE_OPTIONS = [
+  { code: "en", name: "English", native: "English" },
+  { code: "hi", name: "Hindi", native: "हिन्दी" },
+  { code: "ta", name: "Tamil", native: "தமிழ்" },
+  { code: "te", name: "Telugu", native: "తెలుగు" },
+];
+
+const COPY: Record<string, Record<string, string>> = {
+  en: {
+    home: "Home", learn: "Learn", support: "Support", tests: "Real-life tests",
+    helper: "Language helper", voice: "Voice & Sign", teacher: "Teacher studio",
+    educator: "Educator view", language: "Language", access: "Accessibility",
+    title: "Learning Without Limits.", tagline: "A kinder, more flexible way to learn — made for every mind.",
+    start: "Start learning", personalise: "Personalise my experience", find: "Find learning support",
+    fromTeacher: "From your teacher", listen: "Listen to message", showSign: "Show sign while listening",
+    explore: "A little something for every learner", choose: "Choose what feels right today.",
+    read: "Read & understand", visuals: "Learn with visuals", maths: "Basic mathematics",
+    noPenalty: "Not yet. Have another go. There is no penalty.",
+    teacherNote: "Your teacher's message is saved on this computer only.",
+    translateNote: "For other page text, try Chrome's built-in Translate where available.",
+  },
+  hi: {
+    home: "होम", learn: "सीखें", support: "सहायता", tests: "जीवन के प्रश्न",
+    helper: "भाषा सहायक", voice: "आवाज़ और संकेत", teacher: "शिक्षक स्टूडियो",
+    educator: "शिक्षक दृश्य", language: "भाषा", access: "सुलभता",
+    title: "सीखने की कोई सीमा नहीं।", tagline: "सीखने का एक सरल और लचीला तरीका — हर मन के लिए।",
+    start: "सीखना शुरू करें", personalise: "मेरा अनुभव चुनें", find: "सीखने में सहायता पाएँ",
+    fromTeacher: "आपके शिक्षक से", listen: "संदेश सुनें", showSign: "सुनते समय संकेत दिखाएँ",
+    explore: "हर विद्यार्थी के लिए कुछ", choose: "आज जो सही लगे, उसे चुनें।",
+    read: "पढ़ें और समझें", visuals: "चित्रों से सीखें", maths: "बुनियादी गणित",
+    noPenalty: "अभी नहीं। फिर कोशिश करें। कोई दंड नहीं है।",
+    teacherNote: "शिक्षक का संदेश केवल इसी कंप्यूटर पर सहेजा जाता है।",
+    translateNote: "बाकी पेज के लिए Chrome का अनुवाद उपलब्ध होने पर आज़माएँ।",
+  },
+  ta: {
+    home: "முகப்பு", learn: "கற்க", support: "உதவி", tests: "வாழ்க்கைச் சோதனைகள்",
+    helper: "மொழி உதவியாளர்", voice: "குரல் & சைகை", teacher: "ஆசிரியர் பகுதி",
+    educator: "கல்வியாளர் பார்வை", language: "மொழி", access: "அணுகல்தன்மை",
+    title: "எல்லையில்லா கற்றல்.", tagline: "ஒவ்வொரு மனதுக்கும் ஏற்ற எளிய, நெகிழ்வான கற்றல் வழி.",
+    start: "கற்கத் தொடங்கு", personalise: "என் அனுபவத்தைத் தேர்வு செய்", find: "கற்றல் உதவி பெறு",
+    fromTeacher: "உங்கள் ஆசிரியரிடமிருந்து", listen: "செய்தியைக் கேள்", showSign: "கேட்கும்போது சைகையைக் காட்டு",
+    explore: "ஒவ்வொரு மாணவருக்கும் ஏதோ ஒன்று", choose: "இன்று உங்களுக்கு ஏற்றதைத் தேர்வு செய்யுங்கள்.",
+    read: "படித்து புரிந்துகொள்", visuals: "படங்களுடன் கற்க", maths: "அடிப்படை கணிதம்",
+    noPenalty: "இன்னும் சரியில்லை. மீண்டும் முயற்சி செய். தண்டனை இல்லை.",
+    teacherNote: "ஆசிரியரின் செய்தி இந்தக் கணினியில் மட்டுமே சேமிக்கப்படும்.",
+    translateNote: "மற்ற உரைக்கு Chrome மொழிபெயர்ப்பை, கிடைத்தால், முயற்சிக்கவும்.",
+  },
+  te: {
+    home: "హోమ్", learn: "నేర్చుకోండి", support: "సహాయం", tests: "జీవిత పరీక్షలు",
+    helper: "భాష సహాయకుడు", voice: "వాయిస్ & సంకేతం", teacher: "టీచర్ స్టూడియో",
+    educator: "ఎడ్యుకేటర్ వీక్షణ", language: "భాష", access: "ప్రాప్యత",
+    title: "అపరిమిత అభ్యాసం.", tagline: "ప్రతి మనసుకు సరిపోయే సరళమైన, అనువైన అభ్యాస మార్గం.",
+    start: "నేర్చుకోవడం ప్రారంభించండి", personalise: "నా అనుభవాన్ని ఎంచుకోండి", find: "అభ్యాస సహాయం పొందండి",
+    fromTeacher: "మీ టీచర్ నుండి", listen: "సందేశం వినండి", showSign: "వింటున్నప్పుడు సంకేతం చూపించు",
+    explore: "ప్రతి విద్యార్థికి ఏదో ఒకటి", choose: "ఈ రోజు మీకు నచ్చినదాన్ని ఎంచుకోండి.",
+    read: "చదివి అర్థం చేసుకోండి", visuals: "చిత్రాలతో నేర్చుకోండి", maths: "ప్రాథమిక గణితం",
+    noPenalty: "ఇంకా కాదు. మళ్లీ ప్రయత్నించండి. ఎలాంటి శిక్ష లేదు.",
+    teacherNote: "టీచర్ సందేశం ఈ కంప్యూటర్‌లో మాత్రమే సేవ్ చేయబడుతుంది.",
+    translateNote: "మిగతా పేజీ కోసం Chrome అనువాదం అందుబాటులో ఉంటే ప్రయత్నించండి.",
+  },
+};
+
+const ACTIVITY_QUESTIONS: Record<Activity, Array<{ prompt: string; choices: string[]; answer: string; visual?: string }>> = {
+  reading: [
+    { prompt: "Mina waters the small plant every morning. What does Mina do each morning?", choices: ["Waters a plant", "Reads a book", "Feeds a bird"], answer: "Waters a plant" },
+    { prompt: "The plant grows taller when it gets water and sunlight. What helps the plant grow?", choices: ["Water and sunlight", "A toy and a box", "Rain boots"], answer: "Water and sunlight" },
+  ],
+  visuals: [
+    { prompt: "Which one is a bird?", choices: ["🐦 Bird", "🌳 Tree", "☀️ Sun"], answer: "🐦 Bird", visual: "🐦 🌳 ☀️" },
+    { prompt: "What gives us light during the day?", choices: ["🌙 Moon", "☀️ Sun", "🐟 Fish"], answer: "☀️ Sun", visual: "🌙 ☀️ 🐟" },
+  ],
+  math: [
+    { prompt: "You have 2 mangoes and get 1 more. How many mangoes now?", choices: ["2", "3", "4"], answer: "3", visual: "🥭 🥭 + 🥭" },
+    { prompt: "There are 5 birds. 2 fly away. How many remain?", choices: ["2", "3", "5"], answer: "3", visual: "🐦 🐦 🐦 🐦 🐦" },
+  ],
+};
+
+const TEST_QUESTIONS = [
+  { prompt: "A wheelchair user needs to get up one step. What can help?", choices: ["A ramp", "A taller step", "A slippery mat"], answer: "A ramp", visual: "♿  →  ▱" },
+  { prompt: "A seesaw is an example of which simple machine?", choices: ["Lever", "Pulley", "Wheel"], answer: "Lever", visual: "⚖️" },
+  { prompt: "A long ramp makes it easier to move a heavy box because…", choices: ["The push can be gentler", "The box becomes lighter", "It removes gravity"], answer: "The push can be gentler", visual: "📦  ↗" },
+];
+
+const PICTURE_WORDS: Record<string, string> = {
+  tree: "🌳", bird: "🐦", sun: "☀️", flower: "🌼", water: "💧",
+  book: "📘", child: "🧒", children: "🧒", cat: "🐈", dog: "🐕",
+  school: "🏫", apple: "🍎", mango: "🥭", home: "🏠", moon: "🌙",
+};
+
+function speakText(text: string, lang: string, rate = 0.9) {
+  if (typeof window === "undefined" || !("speechSynthesis" in window)) return false;
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = lang === "en" ? "en-IN" : `${lang}-IN`;
+  utterance.rate = rate;
+  window.speechSynthesis.speak(utterance);
+  return true;
+}
+
+function pictureFor(message: string) {
+  const tokens = message.toLowerCase().match(/[a-z]+/g) ?? [];
+  return [...new Set(tokens.filter((word) => PICTURE_WORDS[word]))].slice(0, 6);
+}
 
 export default function Home() {
-  const [text, setText] = useState("");
-  const [words, setWords] = useState<string[]>([]);
-  const [currentIdx, setCurrentIdx] = useState(-1);
-  const [speaking, setSpeaking] = useState(false);
-  const [paused, setPaused] = useState(false);
-  const [lang, setLang] = useState("en");
-  const [rate, setRate] = useState(0.9);
-  const [fontSize, setFontSize] = useState(22);
-  const [contrast, setContrast] = useState(false);
-  const [dyslexia, setDyslexia] = useState(false);
-  const [tutor, setTutor] = useState("");
-  const [tutorLoading, setTutorLoading] = useState(false);
-  const [signMode, setSignMode] = useState(false);
-  const [transcript, setTranscript] = useState<string[]>([]);
-  const [keywords, setKeywords] = useState<string[]>([]);
+  const [page, setPage] = useState<Page>("home");
+  const [language, setLanguage] = useState("en");
+  const [accessOpen, setAccessOpen] = useState(false);
+  const [largeText, setLargeText] = useState(false);
+  const [highContrast, setHighContrast] = useState(false);
+  const [easyRead, setEasyRead] = useState(false);
+  const [lessMotion, setLessMotion] = useState(false);
+  const [moreSpace, setMoreSpace] = useState(false);
+  const [sharedMessage, setSharedMessage] = useState("Today we will see a tree, a bird and the sun.");
+  const [teacherMessage, setTeacherMessage] = useState("");
+  const [showSign, setShowSign] = useState(false);
+  const [activity, setActivity] = useState<Activity | null>(null);
+  const [questionIndex, setQuestionIndex] = useState(0);
+  const [selectedAnswer, setSelectedAnswer] = useState("");
+  const [testsIndex, setTestsIndex] = useState(0);
+  const [testScore, setTestScore] = useState(0);
+  const [testsComplete, setTestsComplete] = useState(false);
+  const [bestScore, setBestScore] = useState(0);
+  const [toolTab, setToolTab] = useState<"speech" | "captions" | "sign">("speech");
+  const [lessonText, setLessonText] = useState("Today we will see a tree, a bird and the sun.");
+  const [caption, setCaption] = useState("");
+  const [listening, setListening] = useState(false);
+  const recognitionRef = useRef<RecognitionInstance | null>(null);
+  const [helperText, setHelperText] = useState("");
+  const [helperReply, setHelperReply] = useState("");
+  const [educatorFilter, setEducatorFilter] = useState("All learners");
+
+  const copy = COPY[language] ?? COPY.en;
 
   useEffect(() => {
-    const load = () => window.speechSynthesis.getVoices();
-    load();
-    if (typeof window !== "undefined" && window.speechSynthesis) {
-      window.speechSynthesis.onvoiceschanged = load;
-    }
+    const savedMessage = window.localStorage.getItem("learnable-class-message");
+    const savedBest = Number(window.localStorage.getItem("learnable-best-test-score") ?? "0");
+    window.setTimeout(() => {
+      if (savedMessage) setSharedMessage(savedMessage);
+      if (Number.isFinite(savedBest)) setBestScore(savedBest);
+    }, 0);
+
+    const syncMessage = (event: StorageEvent) => {
+      if (event.key === "learnable-class-message" && event.newValue) setSharedMessage(event.newValue);
+    };
+    window.addEventListener("storage", syncMessage);
+    return () => window.removeEventListener("storage", syncMessage);
   }, []);
 
-  const T = UI[lang] || UI.en;
+  useEffect(() => {
+    document.documentElement.lang = language === "en" ? "en-IN" : `${language}-IN`;
+  }, [language]);
 
-  const translate = async (src: string): Promise<string> => {
-    if (lang === "en") return src;
-    try {
-      const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(src.slice(0, 500))}&langpair=en|${lang}`;
-      const res = await fetch(url);
-      const data = await res.json();
-      const out = data?.responseData?.translatedText;
-      if (!out || typeof out !== "string") return src;
-      return out;
-    } catch (e) {
-      console.error("Translation failed:", e);
-      return src;
+  useEffect(() => () => {
+    if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+    recognitionRef.current?.stop();
+  }, []);
+
+  const navItems: Array<{ id: Page; label: string; icon: string }> = [
+    { id: "home", label: copy.home, icon: "⌂" },
+    { id: "learn", label: copy.learn, icon: "✳" },
+    { id: "support", label: copy.support, icon: "♡" },
+    { id: "tests", label: copy.tests, icon: "↗" },
+    { id: "helper", label: copy.helper, icon: "文" },
+    { id: "voice", label: copy.voice, icon: "◖" },
+    { id: "teacher", label: copy.teacher, icon: "▤" },
+    { id: "educator", label: copy.educator, icon: "◫" },
+  ];
+
+  const goTo = (target: Page) => {
+    setPage(target);
+    setAccessOpen(false);
+    window.scrollTo({ top: 0, behavior: lessMotion ? "instant" : "smooth" });
+  };
+
+  const beginActivity = (nextActivity: Activity) => {
+    setActivity(nextActivity);
+    setQuestionIndex(0);
+    setSelectedAnswer("");
+  };
+
+  const currentQuestions = activity ? ACTIVITY_QUESTIONS[activity] : [];
+  const currentQuestion = currentQuestions[questionIndex];
+  const testQuestion = TEST_QUESTIONS[testsIndex];
+
+  const selectActivityAnswer = (answer: string) => {
+    if (answer === currentQuestion?.answer) setSelectedAnswer(answer);
+    else setSelectedAnswer(`wrong:${answer}`);
+  };
+
+  const nextActivityQuestion = () => {
+    setQuestionIndex((index) => index + 1);
+    setSelectedAnswer("");
+  };
+
+  const chooseTestAnswer = (answer: string) => {
+    if (answer !== testQuestion.answer) {
+      setSelectedAnswer(`wrong:${answer}`);
+      return;
+    }
+    const nextScore = testScore + 1;
+    setTestScore(nextScore);
+    setSelectedAnswer(answer);
+    if (testsIndex === TEST_QUESTIONS.length - 1) {
+      setTestsComplete(true);
+      const nextBest = Math.max(bestScore, nextScore);
+      setBestScore(nextBest);
+      window.localStorage.setItem("learnable-best-test-score", String(nextBest));
+    } else {
+      window.setTimeout(() => {
+        setTestsIndex((index) => index + 1);
+        setSelectedAnswer("");
+      }, 650);
     }
   };
 
-  const extractKeywords = (t: string) => {
-    const cleaned = t.toLowerCase().replace(/[^a-z\s]/g, "").split(/\s+/);
-    const freq: Record<string, number> = {};
-    cleaned.forEach(w => {
-      if (w.length > 4 && !STOPWORDS.includes(w)) freq[w] = (freq[w] || 0) + 1;
-    });
-    return Object.entries(freq).sort((a, b) => b[1] - a[1]).slice(0, 5).map(x => x[0]);
+  const shareWithClass = () => {
+    const message = teacherMessage.trim();
+    if (!message) return;
+    window.localStorage.setItem("learnable-class-message", message);
+    setSharedMessage(message);
+    setTeacherMessage("");
   };
 
-  const speak = async () => {
-    if (!text.trim()) return;
-    window.speechSynthesis.cancel();
-    setSpeaking(false);
-    setCurrentIdx(-1);
+  const listenToMessage = () => {
+    speakText(sharedMessage, language);
+  };
 
-    const speakText = await translate(text);
-    const w = speakText.split(/\s+/).filter(Boolean);
-    setWords(w);
-    setKeywords(extractKeywords(text));
-
-    // Wait for voices to load
-    let voices = window.speechSynthesis.getVoices();
-    if (voices.length === 0) {
-      await new Promise<void>((resolve) => {
-        const check = setInterval(() => {
-          voices = window.speechSynthesis.getVoices();
-          if (voices.length > 0) { clearInterval(check); resolve(); }
-        }, 100);
-        setTimeout(() => { clearInterval(check); resolve(); }, 1500);
-      });
+  const startCaptions = () => {
+    if (listening) {
+      recognitionRef.current?.stop();
+      setListening(false);
+      return;
     }
-
-    console.log("Available voices:", voices.map(v => `${v.lang} - ${v.name}`));
-
-    // Pick best voice for the target language
-    const want = lang.toLowerCase();
-    let pick =
-      voices.find(v => v.lang.toLowerCase() === want + "-in") ||
-      voices.find(v => v.lang.toLowerCase().startsWith(want)) ||
-      voices.find(v => v.name.toLowerCase().includes(
-        want === "hi" ? "hindi" :
-        want === "ta" ? "tamil" :
-        want === "te" ? "telugu" :
-        want === "bn" ? "bengali" :
-        want === "mr" ? "marathi" :
-        want === "kn" ? "kannada" :
-        want === "ml" ? "malayalam" :
-        want === "gu" ? "gujarati" :
-        want === "pa" ? "punjabi" : ""
-      )) ||
-      voices.find(v => v.lang.toLowerCase().startsWith("en"));
-
-    console.log("Picked voice:", pick?.name, pick?.lang);
-
-    const u = new SpeechSynthesisUtterance(speakText);
-    u.rate = rate;
-    u.pitch = 1;
-    u.volume = 1;
-    if (pick) u.voice = pick;
-
-    u.onstart = () => { setSpeaking(true); setPaused(false); };
-    u.onend = () => { setSpeaking(false); setCurrentIdx(-1); };
-    u.onerror = (e) => { console.error("Speech error:", e); setSpeaking(false); };
-    u.onboundary = (e) => {
-      if (e.name === "word") {
-        const idx = speakText.slice(0, e.charIndex).trim().split(/\s+/).length - 1;
-        setCurrentIdx(idx);
-        if (idx >= 0 && w[idx]) setTranscript(prev => [...prev.slice(-40), w[idx]]);
-      }
+    const speechWindow = window as RecognitionWindow;
+    const Recognition = speechWindow.SpeechRecognition ?? speechWindow.webkitSpeechRecognition;
+    if (!Recognition) {
+      setCaption("Live speech recognition is not available in this browser. Try Chrome or use your device's live captions.");
+      return;
+    }
+    const recognition = new Recognition();
+    recognition.lang = language === "en" ? "en-IN" : `${language}-IN`;
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.onresult = (event) => {
+      const latest = event.results[event.results.length - 1];
+      if (latest?.[0]) setCaption((value) => `${value} ${latest[0].transcript}`.trim());
     };
-
-    setTimeout(() => window.speechSynthesis.speak(u), 100);
+    recognition.onerror = () => {
+      setListening(false);
+      recognitionRef.current = null;
+      setCaption("The microphone could not be started. Check browser permission and try again.");
+    };
+    recognition.onend = () => {
+      setListening(false);
+      recognitionRef.current = null;
+    };
+    setCaption("");
+    recognitionRef.current = recognition;
+    setListening(true);
+    recognition.start();
   };
 
-  const pauseResume = () => {
-    if (window.speechSynthesis.paused) { window.speechSynthesis.resume(); setPaused(false); }
-    else { window.speechSynthesis.pause(); setPaused(true); }
+  const recognizeAndReply = (text: string) => {
+    const detected = /[\u0B80-\u0BFF]/.test(text) ? "ta"
+      : /[\u0C00-\u0C7F]/.test(text) ? "te"
+        : /[\u0900-\u097F]/.test(text) ? "hi" : language;
+    setLanguage(detected);
+    const replies: Record<string, string> = {
+      en: "I heard you. Let’s learn together.",
+      hi: "मैंने आपकी बात सुनी। आइए, साथ में सीखें।",
+      ta: "நான் உங்கள் செய்தியைக் கேட்டேன். ஒன்றாகக் கற்போம்.",
+      te: "మీ మాట విన్నాను. కలిసి నేర్చుకుందాం.",
+    };
+    setHelperReply(replies[detected]);
   };
 
-  const stop = () => {
-    window.speechSynthesis.cancel();
-    setSpeaking(false); setPaused(false); setCurrentIdx(-1);
+  const listenForHelperInput = () => {
+    const speechWindow = window as RecognitionWindow;
+    const Recognition = speechWindow.SpeechRecognition ?? speechWindow.webkitSpeechRecognition;
+    if (!Recognition) {
+      setHelperReply("Speech input is not available in this browser. You can type your message instead.");
+      return;
+    }
+    const recognition = new Recognition();
+    recognition.lang = language === "en" ? "en-IN" : `${language}-IN`;
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.onresult = (event) => {
+      const result = event.results[event.results.length - 1]?.[0]?.transcript;
+      if (result) {
+        setHelperText(result);
+        recognizeAndReply(result);
+      }
+      setListening(false);
+      recognitionRef.current = null;
+    };
+    recognition.onerror = () => {
+      setListening(false);
+      recognitionRef.current = null;
+      setHelperReply("The microphone could not be started. Check browser permission or type your message.");
+    };
+    recognition.onend = () => {
+      setListening(false);
+      recognitionRef.current = null;
+    };
+    recognitionRef.current = recognition;
+    setListening(true);
+    recognition.start();
   };
 
-  const explain = async () => {
-    if (!text.trim()) return;
-    setTutor("");
-    setTutorLoading(true);
-    const translated = await translate(text);
-    setTutor(translated);
-    setTutorLoading(false);
+  const replyToHelper = () => {
+    const text = helperText.trim();
+    if (!text) return;
+    recognizeAndReply(text);
   };
 
-  const downloadTranscript = () => {
-    const blob = new Blob([transcript.join(" ")], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = "learnable-transcript.txt"; a.click();
+  const resetAccessibility = () => {
+    setLargeText(false);
+    setHighContrast(false);
+    setEasyRead(false);
+    setLessMotion(false);
+    setMoreSpace(false);
   };
 
-  const bg = contrast ? "#000" : "#FDF6E3";
-  const fg = contrast ? "#FFF" : "#1B4332";
-  const cardBg = contrast ? "#111" : "#FFF";
-  const headingFont = dyslexia ? "Comic Sans MS, Verdana, sans-serif" : "system-ui, sans-serif";
-  const spacing = dyslexia ? "0.06em" : "normal";
-  const lh = dyslexia ? 2 : 1.6;
+  const shellClasses = [
+    "app-shell",
+    highContrast ? "high-contrast" : "",
+    largeText ? "large-text" : "",
+    easyRead ? "easy-read" : "",
+    lessMotion ? "less-motion" : "",
+    moreSpace ? "more-space" : "",
+  ].filter(Boolean).join(" ");
+
+  const signPanel = showSign ? (
+    <div className="sign-note" role="status">
+      <span className="sign-note-icon" aria-hidden="true">🤟</span>
+      <div>
+        <strong>Sign video unavailable</strong>
+        <p>We do not include sign clips yet. Sign videos must be provided by a qualified Indian Sign Language interpreter; we will not substitute an unverified sign.</p>
+      </div>
+      <div className="sign-controls" aria-label="Sign video controls">
+        <button type="button" disabled>▶ Play</button>
+        <button type="button" disabled>Ⅱ Pause</button>
+        <button type="button" disabled>↺ Replay</button>
+        <label>Speed <select disabled defaultValue="1"><option value="1">1×</option></select></label>
+      </div>
+    </div>
+  ) : null;
 
   return (
-    <main style={{ minHeight: "100vh", background: bg, color: fg, padding: 24, fontFamily: headingFont, letterSpacing: spacing, lineHeight: lh }}>
-      <header style={{ textAlign: "center", marginBottom: 20 }}>
-        <h1 style={{ fontSize: 46, color: contrast ? "#FFB703" : "#2D6A4F", fontWeight: 900, margin: 0 }}>LearnAble</h1>
-        <p style={{ marginTop: 6, opacity: 0.85 }}>{T.tagline}</p>
-      </header>
-
-      <div style={{ maxWidth: 920, margin: "0 auto" }}>
-        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", background: cardBg, padding: 12, borderRadius: 14, marginBottom: 16, alignItems: "center", boxShadow: "0 4px 12px rgba(0,0,0,0.06)" }}>
-          <span style={{ fontSize: 13, fontWeight: 600 }}>{T.font} {fontSize}px</span>
-          <input type="range" min={16} max={40} value={fontSize} onChange={e => setFontSize(+e.target.value)} />
-          <span style={{ fontSize: 13, fontWeight: 600 }}>{T.speed} {rate.toFixed(1)}x</span>
-          <input type="range" min={0.5} max={1.5} step={0.1} value={rate} onChange={e => setRate(+e.target.value)} />
-          <button onClick={() => setContrast(!contrast)} style={{ padding: "8px 12px", borderRadius: 10, border: 0, cursor: "pointer", background: contrast ? "#FFB703" : "#eee", color: "#111", fontWeight: 600 }}>{T.contrast}</button>
-          <button onClick={() => setDyslexia(!dyslexia)} style={{ padding: "8px 12px", borderRadius: 10, border: 0, cursor: "pointer", background: dyslexia ? "#FFB703" : "#eee", color: "#111", fontWeight: 600 }}>{T.dyslexia}</button>
-          <select value={lang} onChange={e => setLang(e.target.value)} style={{ padding: 8, borderRadius: 10, border: "2px solid #2D6A4F", fontWeight: 600, background: cardBg, color: fg, fontSize: 15 }}>
-            {LANGS.map(l => <option key={l.code} value={l.code}>{l.native} ({l.label})</option>)}
-          </select>
-        </div>
-
-        <textarea
-          value={text}
-          onChange={e => setText(e.target.value)}
-          style={{ width: "100%", height: 130, padding: 16, borderRadius: 16, border: "2px solid #2D6A4F", fontSize: 18, fontFamily: "inherit", background: cardBg, color: fg }}
-          placeholder={T.placeholder}
-        />
-
-        <div style={{ display: "flex", gap: 10, marginTop: 12, flexWrap: "wrap" }}>
-          <button onClick={speak} style={{ background: "#2D6A4F", color: "white", padding: "12px 20px", borderRadius: 12, fontWeight: 700, border: 0, cursor: "pointer" }}>{T.read}</button>
-          <button onClick={pauseResume} disabled={!speaking} style={{ background: "#555", color: "white", padding: "12px 20px", borderRadius: 12, fontWeight: 700, border: 0, cursor: "pointer", opacity: speaking ? 1 : 0.5 }}>{paused ? T.resume : T.pause}</button>
-          <button onClick={stop} style={{ background: "#999", color: "white", padding: "12px 20px", borderRadius: 12, fontWeight: 700, border: 0, cursor: "pointer" }}>{T.stop}</button>
-          <button onClick={explain} style={{ background: "#FFB703", color: "#1B4332", padding: "12px 20px", borderRadius: 12, fontWeight: 700, border: 0, cursor: "pointer" }}>{T.explain}</button>
-          <button onClick={() => setSignMode(!signMode)} style={{ background: "#2D6A4F", color: "white", padding: "12px 20px", borderRadius: 12, fontWeight: 700, border: 0, cursor: "pointer" }}>{T.sign}</button>
-        </div>
-
-        {keywords.length > 0 && (
-          <div style={{ marginTop: 16, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-            <span style={{ fontWeight: 700, fontSize: 14 }}>{T.keyWords}</span>
-            {keywords.map((k, i) => (
-              <span key={i} style={{ background: "#FFB703", color: "#1B4332", padding: "4px 12px", borderRadius: 20, fontSize: 14, fontWeight: 600 }}>{k}</span>
+    <main className={shellClasses}>
+      <div className="ambient ambient-one" aria-hidden="true" />
+      <div className="ambient ambient-two" aria-hidden="true" />
+      <div className="site-wrap">
+        <header className="site-header">
+          <button type="button" className="brand" onClick={() => goTo("home")} aria-label="LearnAble home">
+            <span className="brand-mark">L<span>✳</span></span>
+            <span>learn<span>able</span></span>
+          </button>
+          <nav className="top-nav" aria-label="Main navigation">
+            {navItems.map((item) => (
+              <button key={item.id} type="button" className={`nav-link ${page === item.id ? "active" : ""}`} onClick={() => goTo(item.id)}>
+                <span aria-hidden="true">{item.icon}</span>{item.label}
+              </button>
             ))}
-          </div>
-        )}
-
-        {signMode ? (
-          <div style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr", gap: 16, marginTop: 20 }}>
-            <div style={{ background: cardBg, padding: 20, borderRadius: 16, boxShadow: "0 4px 12px rgba(0,0,0,0.08)", fontSize, lineHeight: 1.9 }}>
-              {words.length === 0 && <span style={{ color: "#888" }}>{T.clickRead}</span>}
-              {words.map((w, i) => (
-                <span key={i} style={{ background: i === currentIdx ? "#FFB703" : "transparent", fontWeight: i === currentIdx ? 800 : 400, padding: i === currentIdx ? "2px 4px" : 0, borderRadius: 4 }}>{w} </span>
-              ))}
-            </div>
-            <div style={{ background: "#2D6A4F", color: "white", padding: 24, borderRadius: 16, textAlign: "center", boxShadow: "0 4px 12px rgba(0,0,0,0.15)" }}>
-              <div style={{ fontSize: 72 }}>🤟</div>
-              <p style={{ marginTop: 8, fontWeight: 700 }}>{T.interpreter}</p>
-              <p style={{ opacity: 0.85, fontSize: 15 }}>{T.signing} <b>{currentIdx >= 0 && words[currentIdx] ? words[currentIdx] : "—"}</b></p>
-              {transcript.length > 0 && (
-                <button onClick={downloadTranscript} style={{ marginTop: 12, background: "#FFB703", color: "#1B4332", border: 0, padding: "8px 14px", borderRadius: 10, fontWeight: 700, cursor: "pointer" }}>{T.save}</button>
+          </nav>
+          <div className="header-actions">
+            <label className="language-select">
+              <span className="sr-only">{copy.language}</span>
+              <span aria-hidden="true">◎</span>
+              <select value={language} onChange={(event) => setLanguage(event.target.value)} aria-label={copy.language}>
+                {LANGUAGE_OPTIONS.map((option) => <option key={option.code} value={option.code}>{option.native}</option>)}
+              </select>
+            </label>
+            <div className="access-wrap">
+              <button type="button" className="access-button" aria-expanded={accessOpen} onClick={() => setAccessOpen((open) => !open)}>
+                ◉ <span>{copy.access}</span>
+              </button>
+              {accessOpen && (
+                <section className="access-popover" aria-label="Accessibility settings">
+                  <div className="popover-heading"><div><span className="eyebrow">MAKE IT YOURS</span><h2>Accessibility</h2></div><button type="button" className="icon-button" onClick={() => setAccessOpen(false)} aria-label="Close accessibility settings">×</button></div>
+                  <label className="setting-row"><span><b>Larger text</b><small>Make words easier to see</small></span><input type="checkbox" checked={largeText} onChange={(event) => setLargeText(event.target.checked)} /></label>
+                  <label className="setting-row"><span><b>High contrast</b><small>Stronger colour contrast</small></span><input type="checkbox" checked={highContrast} onChange={(event) => setHighContrast(event.target.checked)} /></label>
+                  <label className="setting-row"><span><b>Easy-read font</b><small>Clearer letter shapes</small></span><input type="checkbox" checked={easyRead} onChange={(event) => setEasyRead(event.target.checked)} /></label>
+                  <label className="setting-row"><span><b>Less motion</b><small>Reduce movement and transitions</small></span><input type="checkbox" checked={lessMotion} onChange={(event) => setLessMotion(event.target.checked)} /></label>
+                  <label className="setting-row"><span><b>More space</b><small>Open up words and sections</small></span><input type="checkbox" checked={moreSpace} onChange={(event) => setMoreSpace(event.target.checked)} /></label>
+                  <button type="button" className="text-button reset-button" onClick={resetAccessibility}>↺ Reset everything</button>
+                </section>
               )}
             </div>
           </div>
-        ) : (
-          words.length > 0 && (
-            <div style={{ marginTop: 20, background: cardBg, padding: 20, borderRadius: 16, boxShadow: "0 4px 12px rgba(0,0,0,0.08)", fontSize, lineHeight: 1.9 }}>
-              {words.map((w, i) => (
-                <span key={i} style={{ background: i === currentIdx ? "#FFB703" : "transparent", fontWeight: i === currentIdx ? 800 : 400, padding: i === currentIdx ? "2px 4px" : 0, borderRadius: 4 }}>{w} </span>
-              ))}
-            </div>
-          )
+        </header>
+
+        {page === "home" && (
+          <>
+            <section className="hero">
+              <div className="hero-copy">
+                <div className="eyebrow"><span className="eyebrow-dot" /> A LEARNING SPACE THAT GETS YOU</div>
+                <h1>{copy.title}</h1>
+                <p className="hero-subtitle">{copy.tagline}</p>
+                <div className="hero-actions">
+                  <button type="button" className="button button-primary" onClick={() => goTo("learn")}>{copy.start}<span aria-hidden="true">↗</span></button>
+                  <button type="button" className="button button-light" onClick={() => { setAccessOpen(true); window.scrollTo({ top: 0, behavior: "smooth" }); }}>{copy.personalise}<span aria-hidden="true">✳</span></button>
+                  <button type="button" className="button button-outline" onClick={() => goTo("support")}>{copy.find}<span aria-hidden="true">→</span></button>
+                </div>
+                <div className="hero-footnote"><span className="avatar-stack"><i>☺</i><i>✿</i><i>☼</i></span><span>Small steps. Bright ideas. <b>Every learner belongs.</b></span></div>
+              </div>
+              <div className="hero-art" aria-label="Illustration of a child reading beneath a tree">
+                <div className="sun-orb" />
+                <span className="sparkle sparkle-one">✦</span><span className="sparkle sparkle-two">✳</span>
+                <div className="art-cloud cloud-one" /><div className="art-cloud cloud-two" />
+                <div className="hill hill-back" /><div className="hill hill-front" />
+                <div className="tree-art"><div className="tree-crown crown-one" /><div className="tree-crown crown-two" /><div className="tree-crown crown-three" /><div className="tree-trunk" /></div>
+                <div className="reader-art"><span className="reader-hair" /><span className="reader-face">◡</span><span className="reader-body" /><span className="reader-book">▰</span></div>
+                <div className="art-caption"><span>✦</span> Learn in your own way</div>
+              </div>
+            </section>
+
+            <section className="teacher-card">
+              <div className="teacher-card-copy">
+                <div className="section-label"><span className="label-icon">✉</span>{copy.fromTeacher}</div>
+                <h2>A little note just for you</h2>
+                <p className="teacher-message">“{sharedMessage}”</p>
+                <div className="teacher-card-actions">
+                  <button type="button" className="button button-primary button-small" onClick={listenToMessage}>◖ {copy.listen}</button>
+                  <label className="inline-check"><input type="checkbox" checked={showSign} onChange={(event) => setShowSign(event.target.checked)} />{copy.showSign}</label>
+                </div>
+                {signPanel}
+                <p className="tiny-note"><span>ⓘ</span> Messages shared by your teacher stay on this computer only.</p>
+              </div>
+              <div className="message-illustration">
+                <div className="illustration-sun">☀</div>
+                <div className="illustration-tree">🌳</div>
+                <div className="illustration-bird">🐦</div>
+                <div className="illustration-ground" />
+                <span className="illustration-spark">✦</span>
+              </div>
+            </section>
+
+            <section className="home-learning">
+              <div className="section-heading">
+                <div><div className="eyebrow">YOUR NEXT LITTLE ADVENTURE</div><h2>{copy.explore}</h2><p>{copy.choose}</p></div>
+                <button type="button" className="text-button" onClick={() => goTo("learn")}>See all activities <span>→</span></button>
+              </div>
+              <ActivityCards onChoose={(selected) => { beginActivity(selected); goTo("learn"); }} copy={copy} />
+            </section>
+            <div className="translation-note">{copy.translateNote} <span>Hindi, Tamil and Telugu menu text needs a native speaker’s review.</span></div>
+          </>
         )}
 
-        {(tutorLoading || tutor) && (
-          <div style={{ marginTop: 20, background: cardBg, padding: 20, borderRadius: 16, boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}>
-            <h3 style={{ color: "#2D6A4F", margin: 0 }}>
-              🧑‍🏫 {T.tutorLabel} — {LANGS.find(l => l.code === lang)?.native}
-            </h3>
-            {tutorLoading ? (
-              <p style={{ marginTop: 10, opacity: 0.7 }}>...</p>
+        {page === "learn" && (
+          <section className="page-section">
+            <PageHeading eyebrow="YOUR LEARNING SPACE" title="Learn at your own pace" description="Pick an activity. There is no rush, and you can always go back." onBack={() => goTo("home")} />
+            {!activity ? (
+              <ActivityCards onChoose={beginActivity} copy={copy} />
+            ) : questionIndex >= currentQuestions.length ? (
+              <div className="quiz-card completion-card"><span className="completion-icon">✦</span><div className="eyebrow">NICE WORK</div><h2>You did it!</h2><p>You finished this activity. Learning takes practice, and you showed up.</p><button type="button" className="button button-primary" onClick={() => { setActivity(null); setQuestionIndex(0); }}>Choose another activity</button></div>
             ) : (
-              <p style={{ marginTop: 10, fontSize: 18 }}>{tutor}</p>
+              <div className="quiz-card">
+                <div className="quiz-topline"><button type="button" className="back-button" onClick={() => { if (questionIndex > 0) { setQuestionIndex(questionIndex - 1); setSelectedAnswer(""); } else setActivity(null); }}>← Back</button><span>{questionIndex + 1} of {currentQuestions.length}</span></div>
+                <div className="progress-track"><span style={{ width: `${((questionIndex + 1) / currentQuestions.length) * 100}%` }} /></div>
+                <div className="quiz-body">
+                  {currentQuestion.visual && <div className="quiz-visual" aria-hidden="true">{currentQuestion.visual}</div>}
+                  <h2>{currentQuestion.prompt}</h2>
+                  {activity === "reading" && <button type="button" className="listen-inline" onClick={() => speakText(currentQuestion.prompt, language)}>◖ Listen to the question</button>}
+                  <div className="answer-grid">
+                    {currentQuestion.choices.map((choice) => {
+                      const wrong = selectedAnswer === `wrong:${choice}`;
+                      return <button key={choice} type="button" disabled={Boolean(selectedAnswer && !selectedAnswer.startsWith("wrong:"))} className={`answer-option ${selectedAnswer === choice ? "correct" : ""} ${wrong ? "incorrect" : ""}`} onClick={() => selectActivityAnswer(choice)}>{choice}<span>{selectedAnswer === choice ? "✓" : "→"}</span></button>;
+                    })}
+                  </div>
+                  {selectedAnswer.startsWith("wrong:") && <p className="gentle-feedback" role="status">{copy.noPenalty}</p>}
+                  {selectedAnswer && !selectedAnswer.startsWith("wrong:") && <div className="right-feedback"><span>✓</span> That&apos;s right. Well done! <button type="button" className="button button-primary button-small" onClick={nextActivityQuestion}>{questionIndex === currentQuestions.length - 1 ? "Finish" : "Next question"} →</button></div>}
+                </div>
+              </div>
             )}
-          </div>
+          </section>
         )}
-      </div>
 
-      <footer style={{ textAlign: "center", marginTop: 40, fontSize: 14, opacity: 0.7 }}>
-        {T.footer}
-      </footer>
+        {page === "support" && (
+          <section className="page-section">
+            <PageHeading eyebrow="HERE FOR YOU" title="Find the support that fits" description="Learning can look different for everyone. Choose a tool and make this space yours." onBack={() => goTo("home")} />
+            <div className="support-grid">
+              <SupportCard icon="◖" title="Listen to words" detail="Hear a message or question read aloud at a gentle pace." action="Try read aloud" onClick={() => goTo("voice")} />
+              <SupportCard icon="Aa" title="Make reading easier" detail="Change text size, colours, spacing and font whenever you need." action="Open accessibility" onClick={() => setAccessOpen(true)} />
+              <SupportCard icon="文" title="Use your language" detail="Type or speak in a language that feels comfortable." action="Open language helper" onClick={() => goTo("helper")} />
+              <SupportCard icon="♡" title="Take a breather" detail="There are no timers or penalties here. You can pause and come back." action="Explore learning" onClick={() => goTo("learn")} />
+            </div>
+            <div className="honesty-card"><span>ⓘ</span><p>We want to be honest about what is available: sign-language videos are not included yet. Future clips must be checked by a qualified Indian Sign Language interpreter.</p></div>
+          </section>
+        )}
+
+        {page === "tests" && (
+          <section className="page-section">
+            <PageHeading eyebrow="EVERYDAY DISCOVERIES" title="Real-life tests" description="Think about ramps and levers. Take your time — there is no timer." onBack={() => goTo("home")} />
+            <div className="quiz-card test-card">
+              {testsComplete ? (
+                <div className="test-result"><span className="completion-icon">✦</span><div className="eyebrow">YOUR RESULT</div><h2>{testScore} out of {TEST_QUESTIONS.length}</h2><p>Your best score on this computer: <b>{bestScore} / {TEST_QUESTIONS.length}</b></p><p className="tiny-note">Saved on this computer only. No name or account needed.</p><button type="button" className="button button-primary" onClick={() => { setTestsIndex(0); setTestScore(0); setTestsComplete(false); setSelectedAnswer(""); }}>Try again</button></div>
+              ) : (
+                <>
+                  <div className="quiz-topline"><button type="button" className="back-button" onClick={() => goTo("home")}>← Back</button><span>Question {testsIndex + 1} of {TEST_QUESTIONS.length}</span></div>
+                  <div className="progress-track"><span style={{ width: `${((testsIndex + 1) / TEST_QUESTIONS.length) * 100}%` }} /></div>
+                  <div className="quiz-body"><div className="quiz-visual" aria-hidden="true">{testQuestion.visual}</div><h2>{testQuestion.prompt}</h2><div className="answer-grid">{testQuestion.choices.map((choice) => <button key={choice} type="button" disabled={Boolean(selectedAnswer && !selectedAnswer.startsWith("wrong:"))} className={`answer-option ${selectedAnswer === choice ? "correct" : ""} ${selectedAnswer === `wrong:${choice}` ? "incorrect" : ""}`} onClick={() => chooseTestAnswer(choice)}>{choice}<span>{selectedAnswer === choice ? "✓" : "→"}</span></button>)}</div>{selectedAnswer.startsWith("wrong:") && <p className="gentle-feedback" role="status">{copy.noPenalty}</p>}</div>
+                </>
+              )}
+            </div>
+            {!testsComplete && <p className="privacy-note">Your best score is kept on this computer only. No name needed.</p>}
+          </section>
+        )}
+
+        {page === "helper" && (
+          <section className="page-section">
+            <PageHeading eyebrow="SAY IT YOUR WAY" title="Language helper" description="Type or speak in a language you know. The page will switch when it recognises Hindi, Tamil or Telugu." onBack={() => goTo("home")} />
+            <div className="helper-card">
+              <label htmlFor="helper-input" className="field-label">Your words</label>
+              <textarea id="helper-input" value={helperText} onChange={(event) => setHelperText(event.target.value)} placeholder="Type in English, हिन्दी, தமிழ் or తెలుగు…" rows={5} />
+              <div className="form-actions"><button type="button" className="button button-primary" onClick={replyToHelper}>↗ Recognise language</button><button type="button" className="button button-light" onClick={listenForHelperInput}>◖ {listening ? "Listening…" : "Speak to type"}</button><button type="button" className="button button-light" onClick={() => speakText(helperText, language)}>◖ Speak text</button></div>
+              {helperReply && <div className="helper-reply" role="status"><span className="reply-spark">✦</span><div><div className="eyebrow">A LITTLE REPLY · {LANGUAGE_OPTIONS.find((option) => option.code === language)?.native}</div><p>{helperReply}</p><button type="button" className="text-button" onClick={() => speakText(helperReply, language)}>◖ Listen to reply</button></div></div>}
+              <p className="tiny-note">Language recognition here uses the writing system for Hindi, Tamil and Telugu. Replies are sample phrases, not live translation. Chrome Translate may help with other page text.</p>
+            </div>
+          </section>
+        )}
+
+        {page === "voice" && (
+          <section className="page-section">
+            <PageHeading eyebrow="MORE WAYS TO COMMUNICATE" title="Voice & sign" description="Use read-aloud, live captions where your browser supports them, or learn about our sign-language limits." onBack={() => goTo("home")} />
+            <div className="tool-tabs" role="tablist" aria-label="Voice and sign tools">
+              <button type="button" role="tab" aria-selected={toolTab === "speech"} className={toolTab === "speech" ? "selected" : ""} onClick={() => setToolTab("speech")}>◖ Text to speech</button>
+              <button type="button" role="tab" aria-selected={toolTab === "captions"} className={toolTab === "captions" ? "selected" : ""} onClick={() => setToolTab("captions")}>▤ Speech to text</button>
+              <button type="button" role="tab" aria-selected={toolTab === "sign"} className={toolTab === "sign" ? "selected" : ""} onClick={() => setToolTab("sign")}>🤟 Sign language</button>
+            </div>
+            <div className="tool-panel">
+              {toolTab === "speech" && <><h2>Let the words speak</h2><p>Type a sentence and listen to it read aloud.</p><textarea value={lessonText} onChange={(event) => setLessonText(event.target.value)} rows={4} aria-label="Text to read aloud" /><button type="button" className="button button-primary" onClick={() => speakText(lessonText, language)}>◖ Listen</button></>}
+              {toolTab === "captions" && <><h2>Live captions for a spoken lesson</h2><p>Captions use your browser&apos;s speech-recognition support. Microphone permission may be needed.</p><button type="button" className={`button ${listening ? "button-outline" : "button-primary"}`} onClick={startCaptions}>{listening ? "■ Stop listening" : "◖ Start captions"}</button><div className="caption-box" aria-live="polite">{caption || "Your live captions will appear here."}</div></>}
+              {toolTab === "sign" && <><h2>Sign language</h2><p>We only want to show signs that are accurate and respectful.</p><div className="honesty-card"><span>ⓘ</span><p>No expert-checked sign video matches are available yet. Sign videos must come from a qualified Indian Sign Language interpreter. We will not show a guessed or unverified sign.</p></div></>}
+            </div>
+          </section>
+        )}
+
+        {page === "teacher" && (
+          <section className="page-section">
+            <PageHeading eyebrow="FOR THE PEOPLE WHO TEACH" title="Teacher studio" description="Create a small illustrated class note and share it with learners on this computer." onBack={() => goTo("home")} />
+            <div className="teacher-studio-grid">
+              <div className="studio-card"><div className="section-label"><span className="label-icon">✎</span>CLASS MESSAGE</div><label className="field-label" htmlFor="teacher-message">Write a short message</label><textarea id="teacher-message" value={teacherMessage} onChange={(event) => setTeacherMessage(event.target.value)} placeholder="Today we will see a tree, a bird and the sun…" rows={4} /><div className="picture-preview"><div className="eyebrow">PICTURE MAKER · BUILT-IN WORD LIST</div><div className="picture-words">{pictureFor(teacherMessage || "tree bird sun").length ? pictureFor(teacherMessage || "tree bird sun").map((word) => <span key={word}>{PICTURE_WORDS[word]}<small>{word}</small></span>) : <p>No picture words recognised yet. Try tree, bird, sun, flower or book.</p>}</div><p className="tiny-note">This uses a small built-in word list. It is not an AI image generator.</p></div><button type="button" className="button button-primary" disabled={!teacherMessage.trim()} onClick={shareWithClass}>Share with class <span>↗</span></button></div>
+              <div className="studio-side"><div className="shared-preview"><div className="section-label"><span className="label-icon">⌂</span>STUDENT HOME PREVIEW</div><h3>From your teacher</h3><p>“{sharedMessage}”</p><div className="mini-picture">{pictureFor(sharedMessage).map((word) => <span key={word}>{PICTURE_WORDS[word]}</span>)}</div><button type="button" className="text-button" onClick={() => goTo("home")}>View student home →</button></div><div className="local-note">ⓘ Shared messages work on this computer only for now.</div></div>
+            </div>
+            <div className="class-tools"><div className="section-heading"><div><div className="eyebrow">CLASS TOOLS</div><h2>More ways to share a lesson</h2></div></div><div className="tool-tabs" role="tablist" aria-label="Class tools"><button type="button" role="tab" aria-selected={toolTab === "speech"} className={toolTab === "speech" ? "selected" : ""} onClick={() => setToolTab("speech")}>Text to speech</button><button type="button" role="tab" aria-selected={toolTab === "captions"} className={toolTab === "captions" ? "selected" : ""} onClick={() => setToolTab("captions")}>Speech to text</button><button type="button" role="tab" aria-selected={toolTab === "sign"} className={toolTab === "sign" ? "selected" : ""} onClick={() => setToolTab("sign")}>Sign language</button></div><div className="tool-panel compact-tool">
+              {toolTab === "speech" && <><h3>Read a lesson aloud</h3><div className="form-actions"><button type="button" className="button button-light" onClick={() => speakText(lessonText, language)}>◖ Read lesson</button><span className="tiny-note">Uses speech voices available on this device.</span></div></>}
+              {toolTab === "captions" && <><h3>Live captions</h3><p>Start browser speech recognition and show captions for a spoken lesson.</p><button type="button" className="button button-light" onClick={startCaptions}>{listening ? "■ Stop captions" : "◖ Start live captions"}</button><div className="caption-box" aria-live="polite">{caption || "Captions will appear here."}</div></>}
+              {toolTab === "sign" && <><h3>Expert-checked sign phrase</h3><p>No verified phrase video is included yet. We do not display guessed signs. An expert-checked Indian Sign Language clip is needed before this tool can show a match.</p></>}
+            </div></div>
+          </section>
+        )}
+
+        {page === "educator" && (
+          <section className="page-section">
+            <PageHeading eyebrow="A SUPPORTIVE OVERVIEW" title="Educator view" description="Sample classroom signals to help plan the next lesson." onBack={() => goTo("home")} />
+            <div className="educator-note"><span>ⓘ</span><p>This is sample data for demonstration. It supports teachers and does not rank children.</p></div>
+            <div className="educator-toolbar"><label>Show <select value={educatorFilter} onChange={(event) => setEducatorFilter(event.target.value)}><option>All learners</option><option>Reading practice</option><option>Visual learning</option><option>Needs a check-in</option></select></label><span>Last 7 days <span aria-hidden="true">⌄</span></span></div>
+            <div className="metric-grid"><MetricCard number="24" label="Anonymous learners" note="No names shown" icon="☺" /><MetricCard number="78%" label="Activities explored" note="Across this sample class" icon="✳" /><MetricCard number="6" label="May need a check-in" note="A gentle nudge, not a score" icon="♡" /></div>
+            <div className="chart-grid"><div className="chart-card"><div className="section-heading"><div><div className="eyebrow">LEARNING ACTIVITY</div><h2>Small steps over time</h2></div><span className="chart-chip">Sample</span></div><div className="bar-chart" aria-label="Sample weekly activity chart"><div className="chart-y"><span>30</span><span>20</span><span>10</span><span>0</span></div>{[["M",42],["T",65],["W",52],["T",78],["F",58],["S",86],["S",48]].map(([day, height], index) => <div className="bar-column" key={`${day}-${index}`}><span style={{ height: `${height}%` }} /><small>{day}</small></div>)}</div></div><div className="chart-card learner-list"><div className="eyebrow">ANONYMOUS LEARNERS</div><h2>Recent activity</h2>{(educatorFilter === "Needs a check-in" ? [["Learner 014", "A gentle check-in may help", "♡"], ["Learner 021", "Taking a little break", "◷"]] : [["Learner 014", "Read & understand", "↗"], ["Learner 008", "Learn with visuals", "✳"], ["Learner 021", "Basic mathematics", "＋"]]).map(([id, info, icon]) => <div className="learner-row" key={id}><span className="learner-avatar">{icon}</span><span><b>{id}</b><small>{info}</small></span><span className="learner-arrow">→</span></div>)}</div></div>
+          </section>
+        )}
+
+        <footer className="site-footer"><div className="footer-brand"><span className="brand-mark">L<span>✳</span></span> learn<span>able</span></div><p>Learning without limits, one little step at a time.</p><div className="footer-links"><button type="button" onClick={() => goTo("support")}>Support</button><button type="button" onClick={() => goTo("teacher")}>For teachers</button><button type="button" onClick={() => goTo("educator")}>Educator view</button></div><small>Built for every kind of learner <span>✦</span></small></footer>
+      </div>
     </main>
   );
+}
+
+function ActivityCards({ onChoose, copy }: { onChoose: (activity: Activity) => void; copy: Record<string, string> }) {
+  return (
+    <div className="activity-grid">
+      <button type="button" className="activity-card reading-card" onClick={() => onChoose("reading")}><span className="activity-icon">Aa</span><span className="activity-arrow">↗</span><span className="activity-category">WORDS & STORIES</span><strong>{copy.read}</strong><span className="activity-description">Short stories, gentle questions and read-aloud support.</span><span className="activity-footer">Take it one question at a time <span>→</span></span></button>
+      <button type="button" className="activity-card visual-card" onClick={() => onChoose("visuals")}><span className="activity-icon">☼</span><span className="activity-arrow">↗</span><span className="activity-category">PICTURES & IDEAS</span><strong>{copy.visuals}</strong><span className="activity-description">Use pictures and words to explore familiar things.</span><span className="activity-footer">See it, think it, learn it <span>→</span></span></button>
+      <button type="button" className="activity-card maths-card" onClick={() => onChoose("math")}><span className="activity-icon">＋</span><span className="activity-arrow">↗</span><span className="activity-category">NUMBERS & PLAY</span><strong>{copy.maths}</strong><span className="activity-description">Friendly number puzzles with room to try again.</span><span className="activity-footer">Every try helps you grow <span>→</span></span></button>
+    </div>
+  );
+}
+
+function PageHeading({ eyebrow, title, description, onBack }: { eyebrow: string; title: string; description: string; onBack: () => void }) {
+  return <div className="page-heading"><button type="button" className="back-button page-back" onClick={onBack}>← Home</button><div className="eyebrow">{eyebrow}</div><h1>{title}</h1><p>{description}</p></div>;
+}
+
+function SupportCard({ icon, title, detail, action, onClick }: { icon: string; title: string; detail: string; action: string; onClick: () => void }) {
+  return <article className="support-card"><span className="support-icon">{icon}</span><h2>{title}</h2><p>{detail}</p><button type="button" className="text-button" onClick={onClick}>{action} →</button></article>;
+}
+
+function MetricCard({ number, label, note, icon }: { number: string; label: string; note: string; icon: string }) {
+  return <article className="metric-card"><span className="metric-icon">{icon}</span><strong>{number}</strong><b>{label}</b><small>{note}</small></article>;
 }
