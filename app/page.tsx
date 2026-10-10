@@ -47,13 +47,15 @@ export default function Home() {
   const [keywords, setKeywords] = useState<string[]>([]);
 
   useEffect(() => {
-    window.speechSynthesis.getVoices();
-    window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+    const load = () => window.speechSynthesis.getVoices();
+    load();
+    if (typeof window !== "undefined" && window.speechSynthesis) {
+      window.speechSynthesis.onvoiceschanged = load;
+    }
   }, []);
 
   const T = UI[lang] || UI.en;
 
-  // Translation using MyMemory (free, CORS-friendly, no API key)
   const translate = async (src: string): Promise<string> => {
     if (lang === "en") return src;
     try {
@@ -89,19 +91,49 @@ export default function Home() {
     setWords(w);
     setKeywords(extractKeywords(text));
 
+    // Wait for voices to load
+    let voices = window.speechSynthesis.getVoices();
+    if (voices.length === 0) {
+      await new Promise<void>((resolve) => {
+        const check = setInterval(() => {
+          voices = window.speechSynthesis.getVoices();
+          if (voices.length > 0) { clearInterval(check); resolve(); }
+        }, 100);
+        setTimeout(() => { clearInterval(check); resolve(); }, 1500);
+      });
+    }
+
+    console.log("Available voices:", voices.map(v => `${v.lang} - ${v.name}`));
+
+    // Pick best voice for the target language
+    const want = lang.toLowerCase();
+    let pick =
+      voices.find(v => v.lang.toLowerCase() === want + "-in") ||
+      voices.find(v => v.lang.toLowerCase().startsWith(want)) ||
+      voices.find(v => v.name.toLowerCase().includes(
+        want === "hi" ? "hindi" :
+        want === "ta" ? "tamil" :
+        want === "te" ? "telugu" :
+        want === "bn" ? "bengali" :
+        want === "mr" ? "marathi" :
+        want === "kn" ? "kannada" :
+        want === "ml" ? "malayalam" :
+        want === "gu" ? "gujarati" :
+        want === "pa" ? "punjabi" : ""
+      )) ||
+      voices.find(v => v.lang.toLowerCase().startsWith("en"));
+
+    console.log("Picked voice:", pick?.name, pick?.lang);
+
     const u = new SpeechSynthesisUtterance(speakText);
     u.rate = rate;
-    const voices = window.speechSynthesis.getVoices();
-    let pick = voices.find(v => v.lang.toLowerCase().startsWith(lang));
-    if (!pick && lang === "hi") pick = voices.find(v => v.lang.toLowerCase().includes("hi"));
-    if (!pick && lang === "ta") pick = voices.find(v => v.lang.toLowerCase().includes("ta"));
-    if (!pick && lang === "te") pick = voices.find(v => v.lang.toLowerCase().includes("te"));
-    if (!pick && lang === "bn") pick = voices.find(v => v.lang.toLowerCase().includes("bn"));
-    if (!pick) pick = voices.find(v => v.lang.toLowerCase().startsWith("en"));
+    u.pitch = 1;
+    u.volume = 1;
     if (pick) u.voice = pick;
 
     u.onstart = () => { setSpeaking(true); setPaused(false); };
     u.onend = () => { setSpeaking(false); setCurrentIdx(-1); };
+    u.onerror = (e) => { console.error("Speech error:", e); setSpeaking(false); };
     u.onboundary = (e) => {
       if (e.name === "word") {
         const idx = speakText.slice(0, e.charIndex).trim().split(/\s+/).length - 1;
@@ -109,7 +141,8 @@ export default function Home() {
         if (idx >= 0 && w[idx]) setTranscript(prev => [...prev.slice(-40), w[idx]]);
       }
     };
-    window.speechSynthesis.speak(u);
+
+    setTimeout(() => window.speechSynthesis.speak(u), 100);
   };
 
   const pauseResume = () => {
